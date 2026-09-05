@@ -24,6 +24,13 @@ def test_categorize_empty_description_returns_none():
     assert categorize("", DEFAULT_RULES) is None
 
 
+def test_categorize_credit_card_payment_is_not_confused_with_salary():
+    # Régression : "paiement" contient "paie" comme sous-chaîne. Un paiement
+    # de carte de crédit ne doit jamais être catégorisé comme un revenu.
+    assert categorize("PAIEMENT RECU - MERCI", DEFAULT_RULES) == "Virement"
+    assert categorize("DEPOT PAIE EMPLOYEUR XYZ", DEFAULT_RULES) == "Revenu"
+
+
 def test_categorize_first_matching_rule_wins_on_ambiguity():
     # Description fictive contenant volontairement deux mots-clés : l'ordre
     # des règles doit trancher, pas un hasard d'itération sur un dict.

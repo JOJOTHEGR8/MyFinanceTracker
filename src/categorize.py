@@ -22,13 +22,16 @@ DEFAULT_RULES: list[Rule] = [
     ("netflix", "Abonnements"),
     ("spotify", "Abonnements"),
     ("loyer", "Logement"),
-    ("paie", "Revenu"),
-    ("interet", "Revenu"),
-    ("pharmacie", "Santé"),
+    # "paiement recu" doit être vérifié avant "paie" : "paiement" contient
+    # "paie" comme sous-chaîne, donc l'ordre inverse ferait passer un
+    # paiement de carte de crédit pour un revenu.
+    ("paiement recu", "Virement"),
     ("interac", "Virement"),
     ("virement", "Virement"),
     ("retrait guichet", "Virement"),
-    ("paiement recu", "Virement"),
+    ("paie", "Revenu"),
+    ("interet", "Revenu"),
+    ("pharmacie", "Santé"),
     ("saq", "Loisirs"),
     ("amazon", "Achats"),
 ]
