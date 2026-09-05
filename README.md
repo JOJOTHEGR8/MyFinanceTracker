@@ -16,7 +16,8 @@ n'est utilisée ni stockée ici.
 
 ## Statut
 
-🚧 En construction — squelette de repo en place, pipeline d'ingestion à venir.
+🚧 En construction — pipeline d'ingestion, catégorisation et base SQLite
+fonctionnels et testés. Tableau de bord Power BI à venir.
 
 ## Le problème concret
 
@@ -29,16 +30,23 @@ institutions fictives avec 3 formats incompatibles (voir `data/raw/`) :
 | `caisse_aurore_epargne.csv` | virgule | AAAA-MM-JJ | colonne signée unique | — |
 | `carte_nordik_credit.csv` | **point-virgule** | JJ/MM/AAAA | colonne signée, **virgule décimale** | convention de signe inversée (carte de crédit) |
 
-Le pipeline devra normaliser tout ça vers un schéma commun.
+Le pipeline (`src/ingest.py`) normalise tout ça vers un schéma commun —
+y compris une subtilité réelle des cartes de crédit : leur relevé inverse
+la convention de signe (un achat y est positif, un paiement négatif), donc
+le signe est inversé à l'ingestion pour mesurer des *dépenses* de façon
+cohérente entre tous les comptes (raisonnement complet dans le docstring
+du module).
 
 ## Structure du repo
 
 ```
-data/raw/       Relevés sources par institution (formats hétérogènes, volontaire)
-src/schema.sql  Schéma relationnel cible (institutions, comptes, transactions, catégories)
-src/            Pipeline d'ingestion, catégorisation, orchestration (à venir)
-tests/          Tests de la logique de catégorisation
-powerbi/        Tableau de bord Power BI connecté à la base SQLite générée
+data/raw/            Relevés sources par institution (formats hétérogènes, volontaire)
+src/schema.sql       Schéma relationnel cible (institutions, comptes, transactions, catégories)
+src/ingest.py        Un parseur par institution -> schéma commun
+src/categorize.py    Catégorisation par règles de mots-clés
+src/pipeline.py      Orchestration : construit finance.db et affiche un résumé
+tests/               Tests (catégorisation, ingestion, bout-en-bout)
+powerbi/             Tableau de bord Power BI connecté à la base SQLite générée (à venir)
 ```
 
 ## Stack
@@ -49,7 +57,19 @@ powerbi/        Tableau de bord Power BI connecté à la base SQLite générée
 
 ## Lancer le projet
 
-À venir avec le pipeline (prochaine étape).
+```bash
+pip install -r requirements.txt
+
+# Construire finance.db à partir de data/raw/ et afficher un résumé
+python -m src.pipeline
+
+# Lancer les tests
+python -m pytest
+```
+
+La base `finance.db` générée n'est pas versionnée (voir `.gitignore`) — elle
+se reconstruit à chaque exécution du pipeline, elle n'est jamais un état
+stocké dans le repo.
 
 ## Contexte réglementaire
 

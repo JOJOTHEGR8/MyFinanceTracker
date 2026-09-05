@@ -23,8 +23,10 @@ tableau de bord Power BI connecté directement à la base.
 
 Toutes les données sont synthétiques — jamais de vraies données bancaires.
 
-Statut : squelette en place (structure, schéma, données d'exemple). Pipeline
-d'ingestion/catégorisation et tableau de bord Power BI à construire.
+Statut : pipeline d'ingestion (`src/ingest.py`, pandas), catégorisation par
+règles (`src/categorize.py`) et orchestration (`src/pipeline.py`) fonctionnels
+et testés (15 tests, `python -m pytest`). Tableau de bord Power BI à
+construire (branché sur `finance.db`, généré par le pipeline, non versionné).
 
 Décisions déjà prises (ne pas rouvrir sans raison) :
 - SQLite plutôt que Postgres : zéro serveur à monter, fichier versionnable,
