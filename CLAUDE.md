@@ -25,19 +25,31 @@ Toutes les données sont synthétiques — jamais de vraies données bancaires.
 
 Statut : pipeline d'ingestion (`src/ingest.py`, pandas), catégorisation par
 règles (`src/categorize.py`) et orchestration (`src/pipeline.py`) fonctionnels
-et testés (15 tests, `python -m pytest`). Tableau de bord Power BI à
-construire (branché sur `finance.db`, généré par le pipeline, non versionné).
+et testés (21 tests, `python -m pytest`, CI GitHub Actions sur chaque push).
+Tableau de bord Power BI construit et connecté à `finance.db` (généré par le
+pipeline, non versionné). Données étendues à une année complète (2026, 262
+transactions) avec un changement de format à mi-année pour Carte Nordik et
+des défauts réalistes injectés (doublons, description manquante, montants
+illisibles) — voir `docs/decisions.md` et `docs/analyse.md`.
 
 Décisions déjà prises (ne pas rouvrir sans raison) :
 - SQLite plutôt que Postgres : zéro serveur à monter, fichier versionnable,
   vrai SQL. Le fichier `.db` généré n'est **pas** commité (`.gitignore`) —
   il se régénère par le pipeline, pas stocké comme état.
-- Power BI plutôt que Streamlit : Jojo maîtrise déjà l'outil. Pour garder une
-  démo publique cliquable malgré ça, utiliser "Publier sur le web" une fois
-  le tableau de bord fait (acceptable car données 100 % synthétiques —
+- Power BI plutôt que Streamlit : Jojo maîtrise déjà l'outil. Démo publique
+  via "Publier sur le web" (acceptable car données 100 % synthétiques —
   ne jamais faire ça avec de vraies données).
-- Pas de ML de catégorisation en V1 : règles par mot-clé seulement. Le ML
-  serait de la sur-ingénierie pour un projet weekend.
+- Pas de ML de catégorisation : règles par mot-clé seulement. Voir
+  `docs/decisions.md` section 2 pour le raisonnement complet.
+- Portée volontairement limitée à la profondeur (données réalistes, tests,
+  CI, documentation des décisions) plutôt qu'à la largeur (plus
+  d'institutions, plus de types de graphiques, une UI custom en plus de
+  Power BI) — décision explicite après discussion sur ce qui prouve
+  réellement du jugement à un recruteur vs ce qui gonfle artificiellement
+  le scope. Un futur "dashboard live" (API boursière + rafraîchissement
+  programmé Power BI Service) est noté comme projet SÉPARÉ, pas une
+  extension de celui-ci — architecture différente (API cloud vs pipeline
+  batch local), ne pas mélanger les deux.
 
 ## Comment on travaille ensemble
 
