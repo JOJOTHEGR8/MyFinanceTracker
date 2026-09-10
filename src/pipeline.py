@@ -8,19 +8,51 @@ import sqlite3
 from pathlib import Path
 
 from src.categorize import DEFAULT_RULES, categorize
-from src.ingest import parse_banque_boreale, parse_caisse_aurore, parse_carte_nordik
+from src.ingest import (
+    RawTransaction,
+    parse_banque_boreale,
+    parse_caisse_aurore,
+    parse_carte_nordik_h1,
+    parse_carte_nordik_h2,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "finance.db"
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
 RAW_DIR = ROOT / "data" / "raw"
 
-# (institution, nom du compte, type de compte, fichier source, parseur)
+# (institution, nom du compte, type de compte, [(fichier source, parseur), ...])
+# Carte Nordik a deux fichiers : son export a changé de format le 1er juillet
+# 2026 (voir docstring de src/ingest.py). Les deux alimentent le même compte.
 SOURCES = [
-    ("Banque Boréale", "Compte chèque", "cheque", "banque_boreale_compte_cheque.csv", parse_banque_boreale),
-    ("Caisse Aurore", "Épargne", "epargne", "caisse_aurore_epargne.csv", parse_caisse_aurore),
-    ("Carte Nordik", "Carte de crédit", "carte_credit", "carte_nordik_credit.csv", parse_carte_nordik),
+    ("Banque Boréale", "Compte chèque", "cheque", [
+        ("banque_boreale_compte_cheque.csv", parse_banque_boreale),
+    ]),
+    ("Caisse Aurore", "Épargne", "epargne", [
+        ("caisse_aurore_epargne.csv", parse_caisse_aurore),
+    ]),
+    ("Carte Nordik", "Carte de crédit", "carte_credit", [
+        ("carte_nordik_credit_2026_h1.csv", parse_carte_nordik_h1),
+        ("carte_nordik_credit_2026_h2.csv", parse_carte_nordik_h2),
+    ]),
 ]
+
+
+def _dedupliquer(transactions: list[RawTransaction]) -> tuple[list[RawTransaction], int]:
+    """Retire les doublons exacts (même date, description et montant) —
+    ça arrive en vrai quand un export bancaire chevauche deux téléchargements.
+    Garde la première occurrence, compte le reste."""
+    vues: set[tuple[str, str, float]] = set()
+    uniques = []
+    doublons = 0
+    for tx in transactions:
+        cle = (tx.date, tx.description, tx.amount)
+        if cle in vues:
+            doublons += 1
+            continue
+        vues.add(cle)
+        uniques.append(tx)
+    return uniques, doublons
 
 
 def build_database(db_path: Path = DB_PATH) -> None:
@@ -32,10 +64,19 @@ def build_database(db_path: Path = DB_PATH) -> None:
         category_ids = _seed_categories(conn)
         _seed_category_rules(conn, category_ids)
 
-        for institution_name, account_name, account_type, filename, parser in SOURCES:
+        for institution_name, account_name, account_type, sources in SOURCES:
             institution_id = _insert_institution(conn, institution_name)
             account_id = _insert_account(conn, institution_id, account_name, account_type)
-            for tx in parser(RAW_DIR / filename):
+
+            transactions: list[RawTransaction] = []
+            for filename, parser in sources:
+                transactions.extend(parser(RAW_DIR / filename))
+
+            transactions, doublons = _dedupliquer(transactions)
+            if doublons:
+                print(f"⚠️  {doublons} transaction(s) dupliquée(s) ignorée(s) pour {account_name}")
+
+            for tx in transactions:
                 category_name = categorize(tx.description, DEFAULT_RULES)
                 category_id = category_ids.get(category_name) if category_name else None
                 conn.execute(

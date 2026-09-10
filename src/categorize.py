@@ -16,9 +16,12 @@ DEFAULT_RULES: list[Rule] = [
     ("uber eats", "Restaurant"),
     ("banquise", "Restaurant"),
     ("st-hubert", "Restaurant"),
+    ("tim hortons", "Restaurant"),
     ("station service", "Transport"),
     ("essence", "Transport"),
+    ("ultramar", "Transport"),
     ("iga", "Épicerie"),
+    ("metro", "Épicerie"),
     ("netflix", "Abonnements"),
     ("spotify", "Abonnements"),
     ("loyer", "Logement"),
@@ -31,9 +34,12 @@ DEFAULT_RULES: list[Rule] = [
     ("retrait guichet", "Virement"),
     ("paie", "Revenu"),
     ("interet", "Revenu"),
+    ("pharmaprix", "Santé"),
     ("pharmacie", "Santé"),
     ("saq", "Loisirs"),
+    ("cineplex", "Loisirs"),
     ("amazon", "Achats"),
+    ("la baie", "Achats"),
 ]
 
 

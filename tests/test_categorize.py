@@ -41,17 +41,26 @@ def test_categorize_first_matching_rule_wins_on_ambiguity():
 def test_default_rules_cover_every_demo_transaction():
     """Garde-fou : si une transaction de démo n'a pas de règle correspondante,
     ce test casse plutôt que de la laisser silencieusement non catégorisée
-    dans le tableau de bord final."""
+    dans le tableau de bord final.
+
+    Trois exceptions attendues, correspondant aux défauts de données
+    injectés volontairement (voir scripts/generate_demo_data.py) : une
+    description vide et deux lignes de transaction avortée, toutes trois
+    exclues du chargement par src/ingest.py avant même d'atteindre la
+    catégorisation — les voir ici confirme juste qu'elles existent bien
+    dans les données brutes."""
+    exceptions_attendues = {"", "TRANSACTION INCOMPLETE", "TRANSACTION EN ATTENTE"}
     sources = [
-        (RAW_DIR / "banque_boreale_compte_cheque.csv", ","),
-        (RAW_DIR / "caisse_aurore_epargne.csv", ","),
-        (RAW_DIR / "carte_nordik_credit.csv", ";"),
+        (RAW_DIR / "banque_boreale_compte_cheque.csv", ",", "Description"),
+        (RAW_DIR / "caisse_aurore_epargne.csv", ",", "Description"),
+        (RAW_DIR / "carte_nordik_credit_2026_h1.csv", ";", "DESCRIPTION"),
+        (RAW_DIR / "carte_nordik_credit_2026_h2.csv", ",", "Merchant"),
     ]
     uncovered = []
-    for csv_file, delimiter in sources:
+    for csv_file, delimiter, colonne in sources:
         with csv_file.open(encoding="utf-8") as f:
             for row in csv.DictReader(f, delimiter=delimiter):
-                description = row.get("Description") or row.get("DESCRIPTION")
-                if categorize(description, DEFAULT_RULES) is None:
+                description = row[colonne]
+                if description not in exceptions_attendues and categorize(description, DEFAULT_RULES) is None:
                     uncovered.append(description)
     assert not uncovered, f"Descriptions non catégorisées : {uncovered}"
